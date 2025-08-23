@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cherry Blossom Notes</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Pacifico&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.4.0/jspdf.umd.min.js"></script>
+    <style>
+        body {
+            font-family: 'Pacifico', cursive;
+            text-align: center;
+            padding: 20px;
+            color: #6d3d6d;
+            transition: background 0.3s ease;
+        }
+        .container {
+            background: rgba(255, 182, 193, 0.8);
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            display: inline-block;
+            width: 80%;
+        }
+        #titleInput, #noteInput, #searchInput {
+            width: 100%;
+            padding: 10px;
+            border-radius: 10px;
+            font-family: 'Pacifico', cursive;
+            background: rgba(255, 255, 255, 0.9);
+            outline: none;
+            font-size: 18px;
+            color: black;
+            text-align: center;
+        }
+        #noteInput {
+            min-height: 200px;
+            text-align: left;
+            border: 1px solid #ccc;
+        }
+        .note {
+            background: white;
+            padding: 10px;
+            border-radius: 10px;
+            margin: 10px 0;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+            position: relative;
+            cursor: grab;
+            color: black;
+        }
+        .delete-btn, .edit-btn, .lock-btn, .export-btn, .pin-btn {
+            position: absolute;
+            top: 5px;
+            right: 10px;
+            background: red;
+            color: white;
+            border: none;
+            padding: 3px 6px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .edit-btn { right: 40px; background: blue; }
+        .lock-btn { right: 70px; background: green; }
+        .export-btn { right: 100px; background: orange; }
+        .pin-btn { right: 130px; background: purple; }
+    </style>
+</head>
+<body>
+    <div class="container" id="notesPage">
+        <h1>🌸 Cherry Blossom Notes 🌸</h1>
+        <input type="text" id="searchInput" placeholder="Search notes..." oninput="searchNotes()">
+        <input type="text" id="titleInput" placeholder="Enter title...">
+        <div contenteditable="true" id="noteInput"></div>
+        <button onclick="addNote()">Save Note</button>
+        <div id="notesContainer"></div>
+    </div>
+    
+    <script>
+        let lockedNotes = {};
+
+        function addNote() {
+            let title = document.getElementById('titleInput').value;
+            let content = document.getElementById('noteInput').innerHTML;
+            let dateTime = new Date().toLocaleString();
+            if (!title.trim()) {
+                alert("Enter a title.");
+                return;
+            }
+            let note = document.createElement('div');
+            note.className = 'note';
+            note.dataset.originalContent = content;
+            note.dataset.pinned = "false";
+            note.innerHTML = `<div class='note-title'><strong>${title}</strong></div>
+                              <div class='note-content'>${content}</div>
+                              <div class='note-date'><small>${dateTime}</small></div>
+                              <button class='edit-btn' onclick='editNote(this)'>✎</button>
+                              <button class='delete-btn' onclick='deleteNote(this)'>X</button>
+                              <button class='lock-btn' onclick='lockNote(this)'>🔒</button>
+                              <button class='export-btn' onclick='exportToPDF(this)'>📄</button>
+                              <button class='pin-btn' onclick='togglePin(this)'>📌</button>`;
+            document.getElementById('notesContainer').appendChild(note);
+            document.getElementById('titleInput').value = "";
+            document.getElementById('noteInput').innerHTML = "";
+            updateNoteOrder();
+        }
+
+        function togglePin(button) {
+            let note = button.parentElement;
+            if (note.dataset.pinned === "true") {
+                note.dataset.pinned = "false";
+                button.textContent = "📌";
+            } else {
+                note.dataset.pinned = "true";
+                button.textContent = "📍";
+            }
+            updateNoteOrder();
+        }
+
+        function updateNoteOrder() {
+            let container = document.getElementById('notesContainer');
+            let notes = Array.from(container.children);
+            notes.sort((a, b) => (b.dataset.pinned === "true") - (a.dataset.pinned === "true"));
+            notes.forEach(note => container.appendChild(note));
+        }
+
+        function editNote(button) {
+            let note = button.parentElement;
+            let contentDiv = note.querySelector('.note-content');
+            if (lockedNotes[note]) {
+                alert("Unlock the note first.");
+                return;
+            }
+            let newText = prompt("Edit your note:", contentDiv.innerHTML);
+            if (newText !== null) {
+                contentDiv.innerHTML = newText;
+                note.dataset.originalContent = newText;
+            }
+        }
+
+        function deleteNote(button) {
+            button.parentElement.remove();
+        }
+
+        function searchNotes() {
+            let query = document.getElementById('searchInput').value.toLowerCase();
+            let notes = document.querySelectorAll('.note');
+            notes.forEach(note => {
+                let title = note.querySelector('.note-title').innerText.toLowerCase();
+                let content = note.dataset.originalContent.toLowerCase();
+                if (title.includes(query) || content.includes(query)) {
+                    note.style.display = "block";
+                } else {
+                    note.style.display = "none";
+                }
+            });
+        }
+    </script>
+</body>
+</html>
